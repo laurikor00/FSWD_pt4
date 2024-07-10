@@ -1,21 +1,25 @@
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const config = require('./utils/config');
-const logger = require('./utils/logger');
+const express = require('express')
+const app = express()
+require('express-async-errors')
+const cors = require('cors')
+const mongoose = require('mongoose')
+const config = require('./utils/config')
+const blogRouter = require('./controllers/blogs')
+const userRouter = require('./controllers/users')
+const loginRouter = require('./controllers/login')
+const middleware = require('./utils/middleware')
 
-const app = express();
+mongoose.connect(config.MONGODB_URI)
 
 // Connect to MongoDB
-const mongoUrl = 'mongodb+srv://bloglist:kS3t3XubEMtE5Ib2@cluster0.bxg8fsc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' 
-//config.MONGODB_URI;
+/*const mongoUrl = config.MONGODB_URI
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    logger.info('Connected to MongoDB');
+    logger.info('Connected to MongoDB')
   })
   .catch((error) => {
-    logger.error('Error connecting to MongoDB:', error.message);
-  });
+    logger.error('Error connecting to MongoDB:', error.message)
+  })
 
 // Define the blog schema and model
 const blogSchema = new mongoose.Schema({
@@ -23,28 +27,41 @@ const blogSchema = new mongoose.Schema({
   author: String,
   url: String,
   likes: Number
-});
-const Blog = mongoose.model('Blog', blogSchema);
+})
+const Blog = mongoose.model('Blog', blogSchema)*/
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
+
+
+if (process.env.NODE_ENV === 'test') {
+	const testingRouter = require('./controllers/testing')
+	app.use('/api/testing', testingRouter)
+}
+
+app.use(middleware.tokenExtractor)
+app.use('/api/blogs', blogRouter)
+app.use('/api/users', userRouter)
+app.use('/api/login', loginRouter)
 
 // Define the routes
-app.get('/api/blogs', (request, response) => {
+/*app.get('/api/blogs', (request, response) => {
   Blog.find({})
     .then(blogs => {
-      response.json(blogs);
-    });
-});
+      response.json(blogs)
+    })
+})
 
 app.post('/api/blogs', (request, response) => {
   const blog = new Blog(request.body);
 
   blog.save()
     .then(result => {
-      response.status(201).json(result);
-    });
-});
+      response.status(201).json(result)
+    })
+})*/
 
 // Export the app instance
-module.exports = app;
+app.use(middleware.errorHandler)
+
+module.exports = app
