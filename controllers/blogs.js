@@ -1,13 +1,13 @@
-const route = require('express').Router()
+const router = require('express').Router()
 const Blog = require('../models/blog')
 const mw = require('../utils/middleware')
 
-route.get('/', async (request, response) => {
+router.get('/', async (request, response) => {
 	const blogs = await Blog.find({}).populate('user', { username: 1, name: 1, id: 1 })
 	response.json(blogs)
 })
 
-route.post('/', mw.userExtractor, async (request, response) => {
+router.post('/', mw.userExtractor, async (request, response) => {
 	const body = request.body
 	const user = request.user
 
@@ -34,7 +34,7 @@ route.post('/', mw.userExtractor, async (request, response) => {
 	response.status(201).json(savedBlog)
 })
 
-route.delete('/:id', mw.userExtractor, async (request, response) => {
+router.delete('/:id', mw.userExtractor, async (request, response) => {
 	const user = request.user
 	const blog = await Blog.findById(request.params.id)
 
@@ -45,11 +45,11 @@ route.delete('/:id', mw.userExtractor, async (request, response) => {
 	response.status(204).end()
 })
 
-route.put('/:id', async (request, response) => {
+router.put('/:id', async (request, response) => {
 	const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, request.body, { new : true })
 
 	await updatedBlog.populate('user', { username: 1, name: 1, id: 1 })
 	response.json(updatedBlog)
 })
 
-module.exports = route
+module.exports = router
