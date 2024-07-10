@@ -79,6 +79,7 @@ module.exports = {
   mostBlogs,
   mostLikes
 }
+/*
 const dummy = (blogs) => {
     return 1
   }
@@ -159,4 +160,4 @@ module.exports = {
   favoriteBlog,
   mostBlogs,
   mostLikes
-}
+}*/
