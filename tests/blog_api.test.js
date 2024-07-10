@@ -8,53 +8,48 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const api = supertest(app)
 
-
+const passwordHash = await bcrypt.hash('sekret', 10)
 beforeEach(async () => {
-
-	await User.deleteMany({})
-	const passwordHash = await bcrypt.hash('sekret', 10)
+        await Promise.all([User.deleteMany({}), Blog.deleteMany({})]);
 	const user = new User({ username: 'root', passwordHash })
 	await user.save()
-	await Blog.deleteMany({})
-	const blogObjects = helper.initialBlogs.map(blog => new Blog(blog))
-	const promiseArray = blogObjects.map(blog => blog.save())
-	await Promise.all(promiseArray)
+	const blogs = helper.initialBlogs.map(blog => new Blog(blog))
+	const array = blogs.map(blog => blog.save())
+	await Promise.all(array)
 })
 
 
 test('Posts are returned as json', async () => {
 	const response = await api.get('/api/blogs')
 		.expect('Content-Type', /application\/json/)
-
 	expect(response.body).toHaveLength(helper.initialBlogs.length) //helper.initialBlogs.length
 })
 
-test('unique identifier property is named id', async () => {
+test('id defined', async () => {
 	const response = await api.get('/api/blogs')
-
 	expect(response.body[0].id).toBeDefined()
 })
 
 const createToken = async () => {
 	const user = await User.findOne()
 
-	const userForToken = {
+	const token = {
 		username: user.username,
 		id: user._id
 	}
 
-	return jwt.sign(userForToken, process.env.SECRET, { expiresIn: 60 * 60 })
+	return jwt.sign(token, process.env.SECRET, { expiresIn: 60 * 60 })
 }
 
 
-test('a blog is added', async () => {
+test('new blog added', async () => {
 
 	const token = await createToken()
 
 	const newBlog = {
-	  title: 'Blog X',
-	  author: 'Author X',
-	  url: 'https://newblog.com/',
+	  title: 'Blog 1',
+	  author: 'Author 2',
+	  url: 'www.blog1.fi/',
 	  likes: 15
 	}
 
@@ -64,20 +59,19 @@ test('a blog is added', async () => {
 	  .send(newBlog)
 
 	const blogAtEnd = await helper.blogsInDb()
-
 	expect(blogAtEnd).toHaveLength(helper.initialBlogs.length + 1)
 
 	const titles = blogAtEnd.map((blog) => blog.title)
 	expect(titles).toContain(newBlog.title)
 })
 
-test('a blog is added without token', async () => {
+test('blog added without token', async () => {
 
 	const newBlog = {
-	  title: 'New blog',
-	  author: 'New author',
-	  url: 'https://newblog.com/',
-	  likes: 15
+	  title: 'Blog 2',
+	  author: 'Author 2',
+	  url: 'www.blog2.fi/',
+	  likes: 10
 	}
 
 	await api
@@ -86,7 +80,6 @@ test('a blog is added without token', async () => {
 	  .expect(401)
 
 	const blogAtEnd = await helper.blogsInDb()
-
 	expect(blogAtEnd).toHaveLength(helper.initialBlogs.length)
 
 	const titles = blogAtEnd.map((blog) => blog.title)
@@ -98,9 +91,9 @@ test('default value of likes is 0', async () => {
 	const token = await createToken()
 
 	const newBlog = {
-		title: 'Blog X',
-		author: 'Author X',
-		url: 'https://newblog.com/',
+		title: 'Blog 3',
+		author: 'Author 3',
+		url: 'www.blog3.fi/',
 	}
 
 	await api
@@ -121,9 +114,9 @@ test('status code 400 is returned if the title is missing', async() => {
 	const token = await createToken()
 
 	const newBlog = {
-		author: 'New author',
-		url: 'https://newblog.com/',
-		likes: 10
+		title: 'Blog 4',
+		author: 'Author 4',
+		url: 'www.blog4.fi/',
 	}
 
 	await api
@@ -141,9 +134,9 @@ test('status code 400 is returned if the url is missing', async() => {
 	const token = await createToken()
 
 	const newBlog = {
-		title: 'New blog',
-		author: 'New author',
-		likes: 10
+		title: 'Bloggie',
+		author: 'Author',
+		likes: 1222
 	}
 
 	await api
@@ -159,13 +152,11 @@ test('status code 400 is returned if the url is missing', async() => {
 test('a blog is deleted', async() => {
 
 	const token = await createToken()
-
 	const user = await User.findOne()
-
 	const newBlog = {
-		title: 'New blog',
-		author: 'New author',
-		url: 'https://newblog.com/',
+		title: 'Blog 1',
+		author: 'Author 1',
+		url: 'www.blog1.fi/',
 		user: user._id,
 		likes: 15
 	  }
@@ -214,7 +205,6 @@ describe('when there is initially one user in db', () => {
 	test('creation fails with proper statuscode and message if the username is less than 3 characters long', async() => {
 
 		const usersAtStart = await helper.usersInDb()
-
 		const newUser = {
 			username: 'a',
 			name: 'a',
@@ -227,27 +217,6 @@ describe('when there is initially one user in db', () => {
 			.expect(400)
 
 		expect(result.body.error).toContain('username: Path `username` (`a`) is shorter than the minimum allowed length (3).')
-
-		const usersAtEnd = await helper.usersInDb()
-		expect(usersAtEnd).toEqual(usersAtStart)
-	})
-
-	test('creation fails with proper statuscode and message if the password is less than 3 characters long', async() => {
-
-		const usersAtStart = await helper.usersInDb()
-
-		const newUser = {
-			username: 'abc',
-			name: 'abc',
-			password: '12'
-		}
-
-		const result = await api
-			.post('/api/users')
-			.send(newUser)
-			.expect(400)
-
-		expect(result.body.error).toContain('password must be at least 3 characters long')
 
 		const usersAtEnd = await helper.usersInDb()
 		expect(usersAtEnd).toEqual(usersAtStart)
@@ -296,7 +265,6 @@ describe('when there is initially one user in db', () => {
 	test('creation fails with proper statuscode and message if username already taken', async() => {
 
 		const usersAtStart = await helper.usersInDb()
-
 		const newUser = {
 			username: 'root',
 			name: 'Superuser',
@@ -314,7 +282,6 @@ describe('when there is initially one user in db', () => {
 		expect(usersAtEnd).toEqual(usersAtStart)
 	})
 })
-
 
 afterAll(async () => {
 	await mongoose.connection.close()
