@@ -318,7 +318,7 @@ describe('when there is initially one user in db', () => {
 
 afterAll(async () => {
 	await mongoose.connection.close()
-})
+})/*
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -641,4 +641,4 @@ describe('when there is initially one user in db', () => {
 
 afterAll(async () => {
 	await mongoose.connection.close()
-})
+})*/
